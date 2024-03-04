@@ -1,0 +1,36 @@
+; SOURCE
+$ORIGIN home.lab.
+@       3600 IN SOA sns.dns.icann.org. noc.dns.icann.org. (
+                                2017042745 ; serial
+                                7200       ; refresh (2 hours)
+                                3600       ; retry (1 hour)
+                                1209600    ; expire (2 weeks)
+                                3600       ; minimum (1 hour)
+                                )
+
+        3600 IN NS a.iana-servers.net.
+        3600 IN NS b.iana-servers.net.
+
+; GRAPE-K8S
+idec-grape         IN A 192.168.178.203
+go-demo            IN A 192.168.178.203
+argo               IN A 192.168.178.203
+gsf-server         IN A 192.168.178.203
+gsf-server-web     IN A 192.168.178.203
+grafana            IN A 192.168.178.203
+minio              IN A 192.168.178.203
+minio-console      IN A 192.168.178.203
+gsf-discovery      IN A 192.168.178.203
+gsf-discovery-web  IN A 192.168.178.203
+
+; MANDARIN-BLUE-K8S
+gsf-server-blue     IN A 192.168.178.230
+gsf-server-web-blue IN A 192.168.178.230
+
+; MANDARIN-COMPOSE
+portainer    IN A     192.168.178.123
+harbor       IN A     192.168.178.123
+
+; GRAPE-COMPOSE
+registry     IN A     192.168.178.117
+keycloak     IN A     192.168.178.117
