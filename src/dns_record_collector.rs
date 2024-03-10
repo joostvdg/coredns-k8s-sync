@@ -1,9 +1,6 @@
 use crate::config::{Config, ExternalSource};
 use crate::dns_record::DnsRecord;
-use base64::{
-    engine::general_purpose,
-    Engine as _,
-};
+use base64::{engine::general_purpose, Engine as _};
 use log::{info, warn};
 use reqwest::{Certificate, Url};
 use std::collections::HashMap;
@@ -12,18 +9,15 @@ use std::time::Duration;
 
 pub struct DnsRecordCollector {
     config: Config,
-    dns_records_by_source: HashMap<String, Vec<DnsRecord>>,
-    canonical_dns_records: Vec<DnsRecord>,
+    dns_records_by_source: HashMap<String, Vec<DnsRecord>>
 }
 
 impl fmt::Display for DnsRecordCollector {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Config: {}\nDNS Records by Source: {:?}\nCanonical DNS Records: {:?}\n",
-            self.config,
-            self.dns_records_by_source,
-            self.canonical_dns_records
+            "Config: {}\nDNS Records by Source: {:?}\n",
+            self.config, self.dns_records_by_source,
         )
     }
 }
@@ -33,7 +27,6 @@ impl DnsRecordCollector {
         DnsRecordCollector {
             config,
             dns_records_by_source: HashMap::new(),
-            canonical_dns_records: Vec::new(),
         }
     }
 
@@ -41,18 +34,23 @@ impl DnsRecordCollector {
     pub async fn collect_dns_records(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         for external_source in &self.config.external_sources {
             info!("Fetching DNS records from {}", external_source.source_name);
-            // TODO: handle possible faillure of collecting DNS records, which is OK, we log a warning and continue
-
+            
             let fetch_result = self.fetch_dns_records(external_source).await;
             if fetch_result.is_err() {
                 warn!(
-                    "Failed to fetch DNS records from {}",
-                    external_source.source_name
+                    "Failed to fetch DNS records from {} - {}",
+                    external_source.source_name,
+                    fetch_result.err().unwrap()
                 );
                 continue;
             }
 
-            let dns_records = fetch_result.unwrap();
+            let mut dns_records = fetch_result.unwrap();
+            dns_records.sort_by_key( |record| record.fqdn.clone());
+            for record in &mut dns_records {
+                record.set_a_record(external_source.domain_name.as_str());
+            }
+
             self.dns_records_by_source
                 .insert(external_source.source_name.clone(), dns_records);
             info!(
@@ -61,6 +59,10 @@ impl DnsRecordCollector {
                 external_source.source_name
             );
         }
+        
+        
+
+        // TODO: deduplicate the DNS records
         Ok(())
     }
 

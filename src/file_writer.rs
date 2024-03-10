@@ -5,7 +5,7 @@ use tokio::fs::OpenOptions;
 use tokio::io::AsyncReadExt;
 use ErrorKind::NotFound;
 
-use crate::dns_record::{to_a_record, DnsRecord};
+use crate::dns_record:: DnsRecord;
 use log::{info, warn};
 
 /// Merge the contents of the Source file with our own content
@@ -54,7 +54,13 @@ pub async fn merge_source_files(
         } else {
             info!("Source file {} found", source_file_path);
             let content = read_content_from_source_file(&source_file_path).await?;
+            destination_file_content.push('\n');
+            destination_file_content.push_str("; Source File: ");
+            destination_file_content.push_str(&source_file_path);
+            destination_file_content.push('\n');
             destination_file_content.push_str(&content);
+            destination_file_content.push('\n');
+            destination_file_content.push('\n');
         }
     }
 
@@ -86,32 +92,44 @@ async fn read_content_from_source_file(source_file_path: &str) -> io::Result<Str
 /// * `io::Result<()>` - A result indicating success or failure
 ///
 pub async fn write_dns_records_to_file(
-    dns_records: &[DnsRecord],
+    dns_records: & mut [DnsRecord],
     destination_file_path: &str,
     source_name: &str,
 ) -> io::Result<usize> {
-    info!("Writing DNS records to file: {}", destination_file_path);
+    
     let mut destination_file_content = String::new();
     destination_file_content.push_str("; Source: ");
     destination_file_content.push_str(source_name);
     destination_file_content.push('\n');
-    for record in dns_records {
-        destination_file_content.push_str(&to_a_record(record));
-        destination_file_content.push('\n');
-    }
+
     if dns_records.is_empty() {
         warn!("No DNS records to write to file: {}", destination_file_path);
         destination_file_content.push_str("; No DNS records found\n");
     }
+
+    // Sort the records by FQDN
+    dns_records.sort_by_key(|record| record.fqdn.clone());
+
+    info!("Writing DNS records to file: {}", destination_file_path);
+    let mut records_written = 0;
+    for record in dns_records {
+        destination_file_content.push_str(record.a_record.as_str());
+        destination_file_content.push('\n');
+        records_written += 1;
+    }
+    
+    // Add a newline at the end of the file
+    destination_file_content.push('\n');
+    
     let file_write_result = tokio::fs::write(destination_file_path, destination_file_content).await;
     match file_write_result {
         Ok(_) => {
             info!(
                 "Wrote {} DNS records to file: {}",
-                dns_records.len(),
+                records_written,
                 destination_file_path
             );
-            Ok(dns_records.len())
+            Ok(records_written)
         }
         Err(e) => {
             warn!("Failed to write DNS records to file: {}", e);
@@ -125,6 +143,7 @@ mod tests {
     use super::*;
     use tokio::fs::File;
     use tokio::io::AsyncReadExt;
+    use std::fs::read_to_string;
 
     #[tokio::test]
     async fn test_merge_source_files() {
@@ -190,39 +209,54 @@ mod tests {
     }
 
     async fn generate_test_dns_records() -> Vec<DnsRecord> {
-        let dns_record_a = DnsRecord {
-            cluster_ip: "".to_string(),
-            cluster_name: "".to_string(),
-            controller: "".to_string(),
-            fqdn: "a.example.com".to_string(),
-            ip: "127.0.0.1".to_string(),
-            kind: "".to_string(),
-            namespace: "".to_string(),
-            port: "".to_string(),
-        };
-        let dns_record_b = DnsRecord {
-            cluster_ip: "".to_string(),
-            cluster_name: "".to_string(),
-            controller: "".to_string(),
-            fqdn: "b.example.com".to_string(),
-            ip: "127.0.0.2".to_string(),
-            kind: "".to_string(),
-            namespace: "".to_string(),
-            port: "".to_string(),
-        };
+        let domain_name = "example.com";
 
-        let dns_records = vec![dns_record_a, dns_record_b];
-        return dns_records;
+        let mut dns_record_a = DnsRecord {
+            fqdn: "a.example.com".to_string(),
+            ip: "127.0.0.2".to_string(),
+            ..Default::default()
+        };
+        dns_record_a.set_a_record(domain_name);
+
+        let mut  dns_record_b = DnsRecord {
+            fqdn: "b.example.com".to_string(),
+            ip: "127.0.0.1".to_string(),
+            ..Default::default()
+        };
+        dns_record_b.set_a_record(domain_name);
+
+        let mut dns_record_c = DnsRecord {
+            fqdn: "c.example.com".to_string(),
+            ip: "127.0.0.3".to_string(),
+            ..Default::default()
+        };
+        dns_record_c.set_a_record(domain_name);
+
+        let mut dns_record_d = DnsRecord {
+            fqdn: "d.example.com".to_string(),
+            ip: "127.0.0.4".to_string(),
+            ..Default::default()
+        };
+        dns_record_d.set_a_record(domain_name);
+
+        let mut dns_record_e = DnsRecord {
+            fqdn: "e.example.com".to_string(),
+            ip: "127.0.0.4".to_string(),
+            ..Default::default()
+        };
+        dns_record_e.set_a_record(domain_name);
+
+        vec![dns_record_b, dns_record_d, dns_record_a, dns_record_c, dns_record_e]
     }
 
     #[tokio::test]
     async fn test_write_dns_records_to_file_success() {
-        let dns_records = generate_test_dns_records().await;
+        let mut dns_records = generate_test_dns_records().await;
         let destination_file_path = "testdata/test_write_dns_records_to_file_success";
         let source_name = "test_source";
 
         let result =
-            write_dns_records_to_file(&dns_records, destination_file_path, source_name).await;
+            write_dns_records_to_file(dns_records.as_mut_slice(), destination_file_path, source_name).await;
         assert!(
             result.is_ok(),
             "Failed to write DNS records to file: {:?}",
@@ -235,26 +269,64 @@ mod tests {
 
     #[tokio::test]
     async fn test_write_dns_records_to_file_invalid_path() {
-        let dns_records = generate_test_dns_records().await;
+        let mut dns_records = generate_test_dns_records().await;
         let destination_file_path = "/root/test_write_dns_records_to_file_invalid_path";
         let source_name = "test_source";
 
         let result =
-            write_dns_records_to_file(&dns_records, destination_file_path, source_name).await;
+            write_dns_records_to_file(dns_records.as_mut_slice(), destination_file_path, source_name).await;
         assert!(
             result.is_err(),
             "Expected an error due to invalid file path"
         );
     }
 
+    // Test if the records are in order
+    #[tokio::test]
+    async fn test_write_dns_records_to_file_order() {
+        let mut dns_records = generate_test_dns_records().await;
+        let destination_file_path = "testdata/test_write_dns_records_to_file_order";
+        let source_name = "test_source";
+
+        let result =
+            write_dns_records_to_file(dns_records.as_mut_slice(), destination_file_path, source_name).await;
+        assert!(
+            result.is_ok(),
+            "Failed to write DNS records to file: {:?}",
+            result.err()
+        );
+
+        let lines: Vec<_> = read_to_string(destination_file_path) 
+            .unwrap()  // panic on possible file-reading errors
+            .lines()  // split the string into an iterator of string slices
+            .map(String::from)  // make each slice into a string
+            .collect();  // gather them together into a vector
+
+        println!("Destination file content: \n{:?}", lines);
+        
+
+        let expected_line_one = "a IN A 127.0.0.2";
+        let expected_line_two = "b IN A 127.0.0.1";
+        let expected_line_three = "c IN A 127.0.0.3";
+        let expected_line_four = "d IN A 127.0.0.4";
+        let expected_line_five = "e IN A 127.0.0.4";
+
+        assert_eq!(lines[1], expected_line_one);
+        assert_eq!(lines[2], expected_line_two);
+        assert_eq!(lines[3], expected_line_three);
+        assert_eq!(lines[4], expected_line_four);
+        assert_eq!(lines[5], expected_line_five);
+        
+    }
+
     #[tokio::test]
     async fn test_write_dns_records_to_file_empty_records() {
-        let dns_records: Vec<DnsRecord> = Vec::new();
+        let mut dns_records: Vec<DnsRecord> = Vec::new();
         let destination_file_path = "testdata/test_write_dns_records_to_file_empty_records";
         let source_name = "test_source";
 
         let result =
-            write_dns_records_to_file(&dns_records, destination_file_path, source_name).await;
+            write_dns_records_to_file(dns_records.as_mut_slice(), destination_file_path, source_name).await;
         assert!(
             result.is_ok(),
             "Failed to write DNS records to file: {:?}",
@@ -266,7 +338,7 @@ mod tests {
         let expected_line_two = "; No DNS records found\n";
 
         let mut destination_content = String::new();
-        let mut file = File::open(destination_file_path.clone()).await.unwrap();
+        let mut file = File::open(destination_file_path).await.unwrap();
         file.read_to_string(&mut destination_content).await.unwrap();
         println!("Destination file content: {}", destination_content);
         assert!(

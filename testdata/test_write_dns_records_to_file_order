@@ -1,0 +1,6 @@
+; Source: test_source
+a IN A 127.0.0.2
+b IN A 127.0.0.1
+c IN A 127.0.0.3
+d IN A 127.0.0.4
+e IN A 127.0.0.4

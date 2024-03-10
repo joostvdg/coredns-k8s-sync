@@ -27,11 +27,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // TODO: configure intermediary result storage
     for source in collector.get_dns_records_by_source() {
+        let dns_records = collector.get_dns_records_by_source().get(source.0.as_str()).unwrap();
+        
         let local_test_records_file_path = "testdata/".to_owned() + source.0.as_str() + ".txt";
         file_writer::write_dns_records_to_file(
-            source.1.as_slice(),
+            dns_records.clone().as_mut_slice(),
             local_test_records_file_path.as_str(),
-            0.to_string().as_str(),
+            source.0.as_str(),
         )
         .await?;
         source_file_paths.push(local_test_records_file_path.clone());

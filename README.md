@@ -4,13 +4,14 @@ Synchronize CoreDNS config file with DNS entries from Kubernetes resources
 
 ## TODO
 
-* [ ] Read in a source file containing DNS records from Kubernetes resources
+* [ X  ] Read in a source file containing DNS records from Kubernetes resources
     * [ X ] Collect this source file from IDEC endpoints
       * [ X ] Configure these endpoints with a configuration file
     * [ ] Detect duplications and remove them (and log them)
-    * [ ] Sort the records in each section, so that output is consistent
-    * [ ] Merge the records into a single file with source files
-* [ ] Set source files in the config file
+    * [ X ] Sort the records in each section, so that output is consistent
+    * [ X ] Merge the records into a single file with source files
+* [ X ] Set source files in the config file
+* [ ] Pad/format the written A Records
 * [ ] Set destination file in the config file
 * [ ] Restart CoreDNS when the destination file changes
 * [ ] Integration test, using several test source files and then verifying the output

@@ -10,10 +10,28 @@ pub struct DnsRecord {
     pub cluster_name: String,
     pub controller: String,
     pub fqdn: String,
+    #[serde(skip_deserializing)]
+    pub a_record: String,
     pub ip: String,
     pub kind: String,
     pub namespace: String,
     pub port: String,
+}
+
+impl Default for DnsRecord {
+    fn default() -> Self {
+        DnsRecord {
+            cluster_ip: "".to_string(),
+            cluster_name: "".to_string(),
+            controller: "".to_string(),
+            fqdn: "".to_string(),
+            a_record: "".to_string(),
+            ip: "".to_string(),
+            kind: "".to_string(),
+            namespace: "".to_string(),
+            port: "".to_string(),
+        }
+    }
 }
 
 impl fmt::Display for DnsRecord {
@@ -26,16 +44,13 @@ impl fmt::Display for DnsRecord {
     }
 }
 
-/// Return the DNS A record representation of a DnsRecord
-///
-/// # Arguments
-/// * `record` - A DnsRecord
-///
-/// # Returns
-/// * `String` - A string representation of the A record
-///
-pub fn to_a_record(record: &DnsRecord) -> String {
-    format!("{} IN A {}", record.fqdn, record.ip)
+
+impl DnsRecord {
+    pub fn set_a_record(&mut self, domain_name: &str) {
+        let domain_to_strip = format!(".{}", domain_name);
+        let a_record_name = self.fqdn.replace(domain_to_strip.as_str(), "");
+        self.a_record = format!("{} IN A {}", a_record_name, self.ip);
+    }
 }
 
 // Test the to_a_record function
@@ -46,17 +61,13 @@ mod tests {
 
     #[test]
     fn test_to_a_record() {
-        let record = DnsRecord {
-            cluster_ip: "10.0.10.1".to_string(),
-            cluster_name: "cluster.local".to_string(),
-            controller: "service".to_string(),
+        let mut record = DnsRecord {
             fqdn: "test.example.com".to_string(),
+            a_record: "".to_string(),
             ip: "192.168.178.101".to_string(),
-            kind: "Service".to_string(),
-            namespace: "default".to_string(),
-            port: "80".to_string(),
+            ..Default::default()
         };
-        let a_record = to_a_record(&record);
-        assert_eq!(a_record, "test.example.com IN A 192.168.178.101");
+        record.set_a_record( "example.com");
+        assert_eq!(record.a_record, "test IN A 192.168.178.101");
     }
 }
