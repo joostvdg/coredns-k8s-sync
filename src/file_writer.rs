@@ -1,25 +1,30 @@
-use ErrorKind::NotFound;
 use io::ErrorKind;
 use std::io;
 use std::path::Path;
 use tokio::fs::OpenOptions;
 use tokio::io::AsyncReadExt;
+use ErrorKind::NotFound;
 
-use log::{ info, warn};
-use crate::dns_record::{DnsRecord, to_a_record};
-
+use crate::dns_record::{to_a_record, DnsRecord};
+use log::{info, warn};
 
 /// Merge the contents of the Source file with our own content
-/// 
+///
 /// # Arguments
 /// * `source_file_paths` - A slice of string containing the path to the source files, with the first being the primary source file (containing the SOA record)
 /// * `destination_file_path` - A string containing the path to the destination file
-/// 
+///
 /// # Returns
 /// * `io::Result<()>` - A result indicating success or failure
-/// 
-pub async fn merge_source_files(source_file_paths:& [&str], destination_file_path: &str) -> io::Result<()> {
-    info!("Merging source files: {:?} into destination file: {}", source_file_paths, destination_file_path);
+///
+pub async fn merge_source_files(
+    source_file_paths: Vec<String>,
+    destination_file_path: &str,
+) -> io::Result<()> {
+    info!(
+        "Merging source files: {:?} into destination file: {}",
+        source_file_paths, destination_file_path
+    );
 
     // Verify the source files exists
     if source_file_paths.is_empty() {
@@ -31,18 +36,6 @@ pub async fn merge_source_files(source_file_paths:& [&str], destination_file_pat
         info!("Source files: {:?}", source_file_paths);
     }
 
-    for source_file_path in source_file_paths {
-        if !Path::new(source_file_path).exists() {
-            warn!("Source file {} not found", source_file_path);
-            let error = io::Error::new(NotFound, "File not found");
-            let result = Err(error);
-            return result;
-        } else {
-            info!("Source file {} found", source_file_path);
-        }
-    }
-
-
     // Merge the contents of the Source file with our own content
     // First, create a empty string
     let mut destination_file_content = String::new();
@@ -53,27 +46,33 @@ pub async fn merge_source_files(source_file_paths:& [&str], destination_file_pat
 
     // Add the source files content
     for source_file_path in source_file_paths {
-        let content = read_content_from_source_file(source_file_path).await?;
-        destination_file_content.push_str(&content);
+        if !Path::new(&source_file_path).exists() {
+            warn!("Source file {} not found", source_file_path);
+            let error = io::Error::new(NotFound, "File not found");
+            let result = Err(error);
+            return result;
+        } else {
+            info!("Source file {} found", source_file_path);
+            let content = read_content_from_source_file(&source_file_path).await?;
+            destination_file_content.push_str(&content);
+        }
     }
-    
 
     info!("Writing to destination file: {}", destination_file_path);
-    tokio::fs::write(destination_file_path, destination_file_content).await.unwrap();
+    tokio::fs::write(destination_file_path, destination_file_content)
+        .await
+        .unwrap();
 
     Ok(())
 }
 
 async fn read_content_from_source_file(source_file_path: &str) -> io::Result<String> {
     info!("Opening source file: {}", source_file_path);
-    let mut source_file = OpenOptions::new()
-        .read(true)
-        .open(source_file_path)
-        .await?;
+    let mut source_file = OpenOptions::new().read(true).open(source_file_path).await?;
     let mut source_file_content = String::new();
     info!("Reading source file: {}", source_file_path);
     source_file.read_to_string(&mut source_file_content).await?;
-    return Ok(source_file_content);
+    Ok(source_file_content)
 }
 
 /// Write DNSRecords to a file, one record per line, one file per source
@@ -86,15 +85,19 @@ async fn read_content_from_source_file(source_file_path: &str) -> io::Result<Str
 /// # Returns
 /// * `io::Result<()>` - A result indicating success or failure
 ///
-pub async fn write_dns_records_to_file(dns_records: &[DnsRecord], destination_file_path: &str, source_name: &str) -> io::Result<usize> {
+pub async fn write_dns_records_to_file(
+    dns_records: &[DnsRecord],
+    destination_file_path: &str,
+    source_name: &str,
+) -> io::Result<usize> {
     info!("Writing DNS records to file: {}", destination_file_path);
     let mut destination_file_content = String::new();
     destination_file_content.push_str("; Source: ");
     destination_file_content.push_str(source_name);
-    destination_file_content.push_str("\n");
+    destination_file_content.push('\n');
     for record in dns_records {
         destination_file_content.push_str(&to_a_record(record));
-        destination_file_content.push_str("\n");
+        destination_file_content.push('\n');
     }
     if dns_records.is_empty() {
         warn!("No DNS records to write to file: {}", destination_file_path);
@@ -103,13 +106,17 @@ pub async fn write_dns_records_to_file(dns_records: &[DnsRecord], destination_fi
     let file_write_result = tokio::fs::write(destination_file_path, destination_file_content).await;
     match file_write_result {
         Ok(_) => {
-            info!("Wrote {} DNS records to file: {}", dns_records.len(), destination_file_path);
-            return Ok(dns_records.len().clone())
-        },
+            info!(
+                "Wrote {} DNS records to file: {}",
+                dns_records.len(),
+                destination_file_path
+            );
+            Ok(dns_records.len())
+        }
         Err(e) => {
             warn!("Failed to write DNS records to file: {}", e);
-            return Err(e);
-        },
+            Err(e)
+        }
     }
 }
 
@@ -125,18 +132,18 @@ mod tests {
         let cwd = std::env::current_dir().unwrap();
         println!("The current directory is {}", cwd.display());
 
-        let test_file1 =  "examples/source.home.lab";
+        let test_file1 = "examples/source.home.lab";
         let mut source_file1_path = String::new();
         source_file1_path.push_str(cwd.display().to_string().as_str());
-        source_file1_path.push_str("/");
+        source_file1_path.push('/');
         source_file1_path.push_str(test_file1);
         println!("The source file is {}", source_file1_path);
         let file_name_1 = source_file1_path.clone();
 
-        let test_file2 =  "examples/source.mandarin.compose";
+        let test_file2 = "examples/source.mandarin.compose";
         let mut source_file2_path = String::new();
         source_file2_path.push_str(cwd.display().to_string().as_str());
-        source_file2_path.push_str("/");
+        source_file2_path.push('/');
         source_file2_path.push_str(test_file2);
         println!("The source file is {}", source_file2_path);
         let file_name_2 = source_file2_path.clone();
@@ -144,31 +151,45 @@ mod tests {
         let destination_file_name = "testdata/db.home.lab";
         let mut destination_file_path = String::new();
         destination_file_path.push_str(cwd.display().to_string().as_str());
-        destination_file_path.push_str("/");
+        destination_file_path.push('/');
         destination_file_path.push_str(destination_file_name);
         println!("The destination file is {}", destination_file_path);
         let test_file_1 = destination_file_path.clone();
 
         // Call the function to test
-        let result = merge_source_files(&[&file_name_1, &file_name_2], &test_file_1).await;
+        let test_files = vec![file_name_1, file_name_2];
+        let result = merge_source_files(test_files, &test_file_1).await;
 
         // Check the result
-        assert!(result.is_ok(), "Failed to merge source files: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Failed to merge source files: {:?}",
+            result.err()
+        );
 
         // Check the content of the destination file
         let mut destination_content = String::new();
         let mut file = File::open(destination_file_path.clone()).await.unwrap();
         file.read_to_string(&mut destination_content).await.unwrap();
         println!("Destination file content: {}", destination_content);
-        assert!(destination_content.contains("; Do not edit this file manually"), "Destination file content does not contain generated comment");
-        assert!(destination_content.contains("$ORIGIN home.lab."), "Destination file content does not contain content from source.home.lab");
-        assert!(destination_content.contains("portainer    IN A     192.168.178.123"), "Destination file content does not contain content from source.mandarin.compose");
+        assert!(
+            destination_content.contains("; Do not edit this file manually"),
+            "Destination file content does not contain generated comment"
+        );
+        assert!(
+            destination_content.contains("$ORIGIN home.lab."),
+            "Destination file content does not contain content from source.home.lab"
+        );
+        assert!(
+            destination_content.contains("portainer    IN A     192.168.178.123"),
+            "Destination file content does not contain content from source.mandarin.compose"
+        );
 
         // Clean up
         tokio::fs::remove_file(destination_file_path).await.unwrap();
     }
 
-    async fn generate_test_dns_records () -> Vec<DnsRecord> {
+    async fn generate_test_dns_records() -> Vec<DnsRecord> {
         let dns_record_a = DnsRecord {
             cluster_ip: "".to_string(),
             cluster_name: "".to_string(),
@@ -190,10 +211,7 @@ mod tests {
             port: "".to_string(),
         };
 
-        let dns_records = vec![
-            dns_record_a,
-            dns_record_b,
-        ];
+        let dns_records = vec![dns_record_a, dns_record_b];
         return dns_records;
     }
 
@@ -203,8 +221,13 @@ mod tests {
         let destination_file_path = "testdata/test_write_dns_records_to_file_success";
         let source_name = "test_source";
 
-        let result = write_dns_records_to_file(&dns_records, destination_file_path, source_name).await;
-        assert!(result.is_ok(), "Failed to write DNS records to file: {:?}", result.err());
+        let result =
+            write_dns_records_to_file(&dns_records, destination_file_path, source_name).await;
+        assert!(
+            result.is_ok(),
+            "Failed to write DNS records to file: {:?}",
+            result.err()
+        );
 
         // Clean up
         tokio::fs::remove_file(destination_file_path).await.unwrap();
@@ -216,8 +239,12 @@ mod tests {
         let destination_file_path = "/root/test_write_dns_records_to_file_invalid_path";
         let source_name = "test_source";
 
-        let result = write_dns_records_to_file(&dns_records, destination_file_path, source_name).await;
-        assert!(result.is_err(), "Expected an error due to invalid file path");
+        let result =
+            write_dns_records_to_file(&dns_records, destination_file_path, source_name).await;
+        assert!(
+            result.is_err(),
+            "Expected an error due to invalid file path"
+        );
     }
 
     #[tokio::test]
@@ -226,8 +253,13 @@ mod tests {
         let destination_file_path = "testdata/test_write_dns_records_to_file_empty_records";
         let source_name = "test_source";
 
-        let result = write_dns_records_to_file(&dns_records, destination_file_path, source_name).await;
-        assert!(result.is_ok(), "Failed to write DNS records to file: {:?}", result.err());
+        let result =
+            write_dns_records_to_file(&dns_records, destination_file_path, source_name).await;
+        assert!(
+            result.is_ok(),
+            "Failed to write DNS records to file: {:?}",
+            result.err()
+        );
         assert_eq!(result.unwrap(), 0, "Expected 0 records to be written");
 
         let expected_line_one = "; Source: test_source\n";
@@ -237,8 +269,14 @@ mod tests {
         let mut file = File::open(destination_file_path.clone()).await.unwrap();
         file.read_to_string(&mut destination_content).await.unwrap();
         println!("Destination file content: {}", destination_content);
-        assert!(destination_content.contains(expected_line_one), "Destination file content does not contain expected line one");
-        assert!(destination_content.contains(expected_line_two), "Destination file content does not contain expected line two");
+        assert!(
+            destination_content.contains(expected_line_one),
+            "Destination file content does not contain expected line one"
+        );
+        assert!(
+            destination_content.contains(expected_line_two),
+            "Destination file content does not contain expected line two"
+        );
 
         // Clean up
         tokio::fs::remove_file(destination_file_path).await.unwrap();

@@ -15,6 +15,13 @@ Synchronize CoreDNS config file with DNS entries from Kubernetes resources
 * [ ] Restart CoreDNS when the destination file changes
 * [ ] Integration test, using several test source files and then verifying the output
 
+## Rust Tools Required
+
+```shell
+rustup component add rustfmt
+rustup component add clippy
+cargo install cargo-audit
+```
 
 ## Testing With Kind
 

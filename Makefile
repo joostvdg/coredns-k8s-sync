@@ -15,3 +15,18 @@ clean:
 # Build a static binary
 static:
 	cargo rustc --release -- -C target-feature=+crt-static
+
+.PHONY: audit
+
+audit:
+	cargo audit
+
+.PHONY: format lint
+
+format:
+	cargo fmt
+
+lint:
+	cargo clippy
+
+all: format lint audit test

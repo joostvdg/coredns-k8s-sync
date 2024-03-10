@@ -1,11 +1,12 @@
+use std::fmt;
 // dns_record.rs
 use serde::Deserialize;
 
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 pub struct DnsRecord {
-    #[serde(rename = "clusterIP")] 
+    #[serde(rename = "clusterIP")]
     pub cluster_ip: String,
-    #[serde(rename = "clusterName")] 
+    #[serde(rename = "clusterName")]
     pub cluster_name: String,
     pub controller: String,
     pub fqdn: String,
@@ -15,22 +16,21 @@ pub struct DnsRecord {
     pub port: String,
 }
 
-impl DnsRecord {
-    pub fn to_string(&self) -> String {
-        format!(
+impl fmt::Display for DnsRecord {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
             "Cluster IP: {}\nCluster Name: {}\nController: {}\nFQDN: {}\nIP: {}\nKind: {}\nNamespace: {}\nPort: {}\n",
             self.cluster_ip, self.cluster_name, self.controller, self.fqdn, self.ip, self.kind, self.namespace, self.port
         )
     }
 }
 
-
-
 /// Return the DNS A record representation of a DnsRecord
-/// 
+///
 /// # Arguments
 /// * `record` - A DnsRecord
-/// 
+///
 /// # Returns
 /// * `String` - A string representation of the A record
 ///
@@ -58,8 +58,5 @@ mod tests {
         };
         let a_record = to_a_record(&record);
         assert_eq!(a_record, "test.example.com IN A 192.168.178.101");
-
     }
-
 }
-

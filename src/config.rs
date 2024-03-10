@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
-use std::{error::Error,  fs};
+use std::{error::Error, fmt, fs};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Config {
     pub external_sources: Vec<ExternalSource>,
     pub destination_file_path: String,
@@ -12,7 +12,7 @@ pub struct Config {
     pub log_level: String,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ExternalSource {
     pub url: String,
     pub domain_name: String,
@@ -24,25 +24,24 @@ pub fn load_config() -> std::result::Result<Config, Box<dyn Error>> {
     Ok(config)
 }
 
-impl Config {
-    pub fn to_string(&self) -> String {
-        format!(
-            "Destination File Path: {}\nSource File Paths: {:?}\nTTL: {}\nCall Frequency: {}\nCA Cert Base64: {}\nLog Level: {}\n",
-            self.destination_file_path, self.source_file_paths, self.ttl, self.call_frequency, self.ca_cert_base64, self.log_level
+impl fmt::Display for Config {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "External Sources: {:?}\nDestination File Path: {}\nSource File Paths: {:?}\nTTL: {}\nCall Frequency: {}\nCA Cert Base64: {}\nLog Level: {}\n",
+            self.external_sources, self.destination_file_path, self.source_file_paths, self.ttl, self.call_frequency, self.ca_cert_base64, self.log_level
         )
     }
 }
-
-impl ExternalSource {
-    pub fn to_string(&self) -> String {
-        format!(
+impl fmt::Display for ExternalSource {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
             "URL: {}\nDomain Name: {}\nSource Name: {}\n",
             self.url, self.domain_name, self.source_name
         )
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {
