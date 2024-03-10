@@ -4,7 +4,7 @@ use reqwest::{Certificate, Url};
 use crate::config::{Config, ExternalSource};
 use crate::dns_record::DnsRecord;
 use base64::{Engine as _, engine::{self, general_purpose}};
-use log::info;
+use log::{info, warn};
 
 pub struct DnsRecordCollector {
     config: Config,
@@ -32,7 +32,15 @@ impl DnsRecordCollector {
     pub async fn collect_dns_records(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         for external_source in &self.config.external_sources {
             info!("Fetching DNS records from {}", external_source.source_name  );
-            let dns_records = self.fetch_dns_records(&external_source).await?;
+            // TODO: handle possible faillure of collecting DNS records, which is OK, we log a warning and continue
+
+            let fetch_result = self.fetch_dns_records(&external_source).await;
+            if fetch_result.is_err() {
+                warn!("Failed to fetch DNS records from {}", external_source.source_name);
+                continue;
+            }
+
+            let dns_records = fetch_result.unwrap();
             self.dns_records_by_source.insert(external_source.source_name.clone(), dns_records);
             info!("Fetched {} DNS records from {}", self.dns_records_by_source[&external_source.source_name].len(), external_source.source_name);
         }
@@ -56,5 +64,14 @@ impl DnsRecordCollector {
             .await?;
 
         Ok(result)
+    }
+
+    /// Returns the collected DNS records by source
+    ///
+    /// # Returns
+    /// * `HashMap<String, Vec<DnsRecord>>` - A HashMap containing the DNS records by source
+    ///
+    pub fn get_dns_records_by_source(&self) -> &HashMap<String, Vec<DnsRecord>> {
+        &self.dns_records_by_source
     }
 }

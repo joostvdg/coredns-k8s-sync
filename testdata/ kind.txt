@@ -1,0 +1,2 @@
+idec.example.com IN A 172.19.255.200
+localhost IN A 172.19.255.200
