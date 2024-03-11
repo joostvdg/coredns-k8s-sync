@@ -114,6 +114,7 @@ pub async fn write_dns_records_to_file(
     let mut records_written = 0;
     for record in dns_records {
         if record.is_duplicate {
+            warn!("Duplicate DNS record found: {}", record.a_record.as_str());
             destination_file_content.push_str("; ");
             destination_file_content.push_str(record.a_record.as_str());
             destination_file_content.push_str(" - Duplicate");
