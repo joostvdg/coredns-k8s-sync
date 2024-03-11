@@ -113,8 +113,15 @@ pub async fn write_dns_records_to_file(
     info!("Writing DNS records to file: {}", destination_file_path);
     let mut records_written = 0;
     for record in dns_records {
-        destination_file_content.push_str(record.a_record.as_str());
-        destination_file_content.push('\n');
+        if record.is_duplicate {
+            destination_file_content.push_str("; ");
+            destination_file_content.push_str(record.a_record.as_str());
+            destination_file_content.push_str(" - Duplicate");
+            destination_file_content.push('\n');
+        } else {
+            destination_file_content.push_str(record.a_record.as_str());
+            destination_file_content.push('\n');
+        }
         records_written += 1;
     }
     
@@ -248,8 +255,15 @@ mod tests {
             ..Default::default()
         };
         dns_record_e.set_a_record(DOMAIN_NAME, PADDING);
+        let mut dns_record_e_dup = DnsRecord {
+            fqdn: "e.example.com".to_string(),
+            ip: "127.0.0.4".to_string(),
+            ..Default::default()
+        };
+        dns_record_e_dup.set_a_record(DOMAIN_NAME, PADDING);
+        dns_record_e_dup.is_duplicate = true;
 
-        vec![dns_record_b, dns_record_d, dns_record_a, dns_record_c, dns_record_e]
+        vec![dns_record_b, dns_record_d, dns_record_a, dns_record_c, dns_record_e, dns_record_e_dup]
     }
 
     #[tokio::test]
@@ -319,6 +333,37 @@ mod tests {
         assert_eq!(lines[3], expected_line_3);
         assert_eq!(lines[4], expected_line_4);
         assert_eq!(lines[5], expected_line_5);
+        
+    }
+
+    #[tokio::test]
+    async fn test_write_dns_records_to_file_duplicates_are_commented_out() {
+        let mut dns_records = generate_test_dns_records().await;
+        let destination_file_path = "testdata/test_write_dns_records_to_file_order";
+        let source_name = "test_source";
+
+        let result =
+            write_dns_records_to_file(dns_records.as_mut_slice(), destination_file_path, source_name).await;
+        assert!(
+            result.is_ok(),
+            "Failed to write DNS records to file: {:?}",
+            result.err()
+        );
+
+        let lines: Vec<_> = read_to_string(destination_file_path) 
+            .unwrap()  // panic on possible file-reading errors
+            .lines()  // split the string into an iterator of string slices
+            .map(String::from)  // make each slice into a string
+            .collect();  // gather them together into a vector
+
+        println!("Destination file content: \n{:?}", lines);
+        
+
+        let expected_line_5 = "e     IN A 127.0.0.4";
+        let expected_line_6 = "; e     IN A 127.0.0.4 - Duplicate";
+
+        assert_eq!(lines[5], expected_line_5);
+        assert_eq!(lines[6], expected_line_6);
         
     }
 
