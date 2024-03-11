@@ -4,6 +4,8 @@ mod dns_record;
 mod dns_record_collector;
 mod file_writer;
 
+use crate::dns_record_collector::RealDnsRecordFetcher;
+
 use log::info;
 
 #[tokio::main]
@@ -13,7 +15,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = config::load_config()?;
     info!("Config:\n{}", config.to_string());
 
-    let mut collector = dns_record_collector::DnsRecordCollector::new(config.clone());
+    let mut collector = dns_record_collector::DnsRecordCollector::new(config.clone(), Box::new(RealDnsRecordFetcher));
     collector.collect_dns_records().await?;
 
     let mut source_file_paths: Vec<String> = Vec::new();

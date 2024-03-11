@@ -12,6 +12,20 @@ pub struct Config {
     pub log_level: String,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Config {
+            external_sources: vec![],
+            destination_file_path: "".to_string(),
+            source_file_paths: vec![],
+            ttl: 0,
+            call_frequency: 0,
+            ca_cert_base64: "".to_string(),
+            log_level: "".to_string(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct ExternalSource {
     pub url: String,
