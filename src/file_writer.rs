@@ -145,6 +145,9 @@ mod tests {
     use tokio::io::AsyncReadExt;
     use std::fs::read_to_string;
 
+    const DOMAIN_NAME: &str = "example.com";
+    const PADDING: usize = 5;
+
     #[tokio::test]
     async fn test_merge_source_files() {
         // Print current working directory
@@ -209,42 +212,42 @@ mod tests {
     }
 
     async fn generate_test_dns_records() -> Vec<DnsRecord> {
-        let domain_name = "example.com";
+        
 
         let mut dns_record_a = DnsRecord {
             fqdn: "a.example.com".to_string(),
             ip: "127.0.0.2".to_string(),
             ..Default::default()
         };
-        dns_record_a.set_a_record(domain_name);
+        dns_record_a.set_a_record(DOMAIN_NAME, PADDING);
 
         let mut  dns_record_b = DnsRecord {
             fqdn: "b.example.com".to_string(),
             ip: "127.0.0.1".to_string(),
             ..Default::default()
         };
-        dns_record_b.set_a_record(domain_name);
+        dns_record_b.set_a_record(DOMAIN_NAME, PADDING);
 
         let mut dns_record_c = DnsRecord {
             fqdn: "c.example.com".to_string(),
             ip: "127.0.0.3".to_string(),
             ..Default::default()
         };
-        dns_record_c.set_a_record(domain_name);
+        dns_record_c.set_a_record(DOMAIN_NAME, PADDING);
 
         let mut dns_record_d = DnsRecord {
             fqdn: "d.example.com".to_string(),
             ip: "127.0.0.4".to_string(),
             ..Default::default()
         };
-        dns_record_d.set_a_record(domain_name);
+        dns_record_d.set_a_record(DOMAIN_NAME, PADDING);
 
         let mut dns_record_e = DnsRecord {
             fqdn: "e.example.com".to_string(),
             ip: "127.0.0.4".to_string(),
             ..Default::default()
         };
-        dns_record_e.set_a_record(domain_name);
+        dns_record_e.set_a_record(DOMAIN_NAME, PADDING);
 
         vec![dns_record_b, dns_record_d, dns_record_a, dns_record_c, dns_record_e]
     }
@@ -305,17 +308,17 @@ mod tests {
         println!("Destination file content: \n{:?}", lines);
         
 
-        let expected_line_one = "a IN A 127.0.0.2";
-        let expected_line_two = "b IN A 127.0.0.1";
-        let expected_line_three = "c IN A 127.0.0.3";
-        let expected_line_four = "d IN A 127.0.0.4";
-        let expected_line_five = "e IN A 127.0.0.4";
+        let expected_line_1 = "a     IN A 127.0.0.2";
+        let expected_line_2 = "b     IN A 127.0.0.1";
+        let expected_line_3 = "c     IN A 127.0.0.3";
+        let expected_line_4 = "d     IN A 127.0.0.4";
+        let expected_line_5 = "e     IN A 127.0.0.4";
 
-        assert_eq!(lines[1], expected_line_one);
-        assert_eq!(lines[2], expected_line_two);
-        assert_eq!(lines[3], expected_line_three);
-        assert_eq!(lines[4], expected_line_four);
-        assert_eq!(lines[5], expected_line_five);
+        assert_eq!(lines[1], expected_line_1);
+        assert_eq!(lines[2], expected_line_2);
+        assert_eq!(lines[3], expected_line_3);
+        assert_eq!(lines[4], expected_line_4);
+        assert_eq!(lines[5], expected_line_5);
         
     }
 

@@ -16,6 +16,8 @@ pub struct DnsRecord {
     pub kind: String,
     pub namespace: String,
     pub port: String,
+    #[serde(skip_deserializing)]
+    pub is_duplicate: bool,
 }
 
 impl Default for DnsRecord {
@@ -30,6 +32,7 @@ impl Default for DnsRecord {
             kind: "".to_string(),
             namespace: "".to_string(),
             port: "".to_string(),
+            is_duplicate: false,
         }
     }
 }
@@ -46,9 +49,12 @@ impl fmt::Display for DnsRecord {
 
 
 impl DnsRecord {
-    pub fn set_a_record(&mut self, domain_name: &str) {
+    pub fn set_a_record(&mut self, domain_name: &str, padding_length: usize) {
         let domain_to_strip = format!(".{}", domain_name);
-        let a_record_name = self.fqdn.replace(domain_to_strip.as_str(), "");
+        let mut a_record_name = self.fqdn.replace(domain_to_strip.as_str(), "");
+        for _ in 0..(padding_length - a_record_name.len()) {
+            a_record_name.push_str(" ");
+        }
         self.a_record = format!("{} IN A {}", a_record_name, self.ip);
     }
 }
@@ -61,13 +67,25 @@ mod tests {
 
     #[test]
     fn test_to_a_record() {
-        let mut record = DnsRecord {
-            fqdn: "test.example.com".to_string(),
+        let padding_length = 10;
+
+        let mut record_a = DnsRecord {
+            fqdn: "test1.example.com".to_string(),
             a_record: "".to_string(),
             ip: "192.168.178.101".to_string(),
             ..Default::default()
         };
-        record.set_a_record( "example.com");
-        assert_eq!(record.a_record, "test IN A 192.168.178.101");
+        record_a.set_a_record( "example.com", padding_length);
+        
+        let mut record_b = DnsRecord {
+            fqdn: "test2.example.com".to_string(),
+            a_record: "".to_string(),
+            ip: "192.168.178.102".to_string(),
+            ..Default::default()
+        };
+        record_b.set_a_record( "example.com", padding_length);
+
+        assert_eq!(record_a.a_record, "test1      IN A 192.168.178.101");
+        assert_eq!(record_b.a_record, "test2      IN A 192.168.178.102");
     }
 }

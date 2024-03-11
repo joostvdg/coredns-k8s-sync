@@ -47,8 +47,18 @@ impl DnsRecordCollector {
 
             let mut dns_records = fetch_result.unwrap();
             dns_records.sort_by_key( |record| record.fqdn.clone());
+            let mut longest_name = 0;
+
             for record in &mut dns_records {
-                record.set_a_record(external_source.domain_name.as_str());
+                let name_length = record.fqdn.len() - external_source.domain_name.len();
+                if name_length > longest_name {
+                    longest_name = name_length;
+                }
+            }
+
+            let padding_length = longest_name + 4;
+            for record in &mut dns_records {
+                record.set_a_record(external_source.domain_name.as_str(), padding_length);
             }
 
             self.dns_records_by_source
