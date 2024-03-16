@@ -5,6 +5,7 @@
     "/home/joostvdg/projects/coredns-k8s-sync/examples/source.grape.compose"
   ],
   "destination_file_path": "/home/joostvdg/projects/coredns-k8s-sync/examples/destination_test",
+  "temp_storage_path": "/home/joostvdg/projects/coredns-k8s-sync/examples/temp",
   "log_level": "info",
   "call_frequency": 60,
   "ttl": 3600,

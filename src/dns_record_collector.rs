@@ -162,6 +162,7 @@ mod tests {
                 domain_name: "example.com".to_string(),
                 source_name: "test".to_string(),
             }],
+            temp_storage_path: "temp.home.lab".to_string(),
             destination_file_path: "destination.home.lab".to_string(),
             source_file_paths: vec!["source1.home.lab".to_string()],
             ttl: 0,

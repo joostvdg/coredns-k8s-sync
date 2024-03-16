@@ -31,7 +31,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     for source in collector.get_dns_records_by_source() {
         let dns_records = collector.get_dns_records_by_source().get(source.0.as_str()).unwrap();
         
-        let local_test_records_file_path = "testdata/".to_owned() + source.0.as_str() + ".txt";
+        let local_test_records_file_path = config.temp_storage_path.clone() + source.0.as_str() + ".txt";
         file_writer::write_dns_records_to_file(
             dns_records.clone().as_mut_slice(),
             local_test_records_file_path.as_str(),
@@ -41,8 +41,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         source_file_paths.push(local_test_records_file_path.clone());
     }
 
-    // TODO: read destination file path from config, and validate we can write to it
-    let destination_file_path = "./examples/destination.home.lab";
+    let destination_file_path = &config.destination_file_path.clone();
     file_writer::merge_source_files(source_file_paths, destination_file_path).await?;
 
     // TODO: how do we reload the CoreDNS service?

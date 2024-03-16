@@ -6,6 +6,7 @@ pub struct Config {
     pub external_sources: Vec<ExternalSource>,
     pub destination_file_path: String,
     pub source_file_paths: Vec<String>,
+    pub temp_storage_path: String,
     pub ttl: u64,
     pub call_frequency: u64,
     pub ca_cert_base64: String,
@@ -17,6 +18,7 @@ impl Default for Config {
         Config {
             external_sources: vec![],
             destination_file_path: "".to_string(),
+            temp_storage_path: "".to_string(),
             source_file_paths: vec![],
             ttl: 0,
             call_frequency: 0,
@@ -73,6 +75,7 @@ mod tests {
                 }
             ],
             "destination_file_path": "/var/lib/coredns/db.home.lab",
+            "temp_storage_path": "/tmp/coredns/",
             "source_file_paths": ["/path/to/source1"],
             "ttl": 3600,
             "call_frequency": 60,
@@ -86,6 +89,7 @@ mod tests {
         assert_eq!(config.external_sources[0].domain_name, "example.com");
         assert_eq!(config.external_sources[0].source_name, "example");
         assert_eq!(config.destination_file_path, "/var/lib/coredns/db.home.lab");
+        assert_eq!(config.temp_storage_path, "/tmp/coredns/");
         assert_eq!(config.source_file_paths[0], "/path/to/source1");
         assert_eq!(config.ttl, 3600);
         assert_eq!(config.call_frequency, 60);
