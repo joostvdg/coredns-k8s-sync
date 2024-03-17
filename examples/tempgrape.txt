@@ -1,0 +1,17 @@
+; Source: grape
+argo                    IN A 192.168.178.203
+go-demo                 IN A 192.168.178.203
+grafana                 IN A 192.168.178.203
+grape-dns-entries       IN A 192.168.178.203
+gsf-discovery-test      IN A 192.168.178.203
+gsf-discovery-web       IN A 192.168.178.203
+gsf-discovery           IN A 192.168.178.203
+gsf-server-1            IN A 192.168.178.203
+gsf-server-2            IN A 192.168.178.203
+gsf-server-web          IN A 192.168.178.203
+gsf-server              IN A 192.168.178.203
+idec-grape              IN A 192.168.178.203
+minio-console           IN A 192.168.178.203
+minio                   IN A 192.168.178.203
+tekton                  IN A 192.168.178.203
+

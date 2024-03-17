@@ -41,7 +41,6 @@ impl DnsRecordFetcher for RealDnsRecordFetcher {
 
 pub struct DnsRecordCollector {
     config: Config,
-    dns_records_by_source: HashMap<String, Vec<DnsRecord>>,
     fetcher: Box<dyn DnsRecordFetcher>,
 }
 
@@ -49,8 +48,8 @@ impl fmt::Display for DnsRecordCollector {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "Config: {}\nDNS Records by Source: {:?}\n",
-            self.config, self.dns_records_by_source,
+            "Config: {}\n",
+            self.config,
         )
     }
 }
@@ -60,14 +59,14 @@ impl DnsRecordCollector {
     pub fn new(config: Config, fetcher:  Box<dyn DnsRecordFetcher>   ) -> DnsRecordCollector {
         DnsRecordCollector {
             config,
-            dns_records_by_source: HashMap::new(),
             fetcher: fetcher,
         }
     }
 
     // For each external_source in the config, fetch the DNS records and store them in the dns_records_by_source HashMap
-    pub async fn collect_dns_records(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn collect_dns_records(&mut self) -> Result<HashMap<String, Vec<DnsRecord>>, Box<dyn std::error::Error>> {
         let mut fqds_seen = HashMap::new();
+        let mut dns_records_by_source: HashMap<String, Vec<DnsRecord>> = HashMap::new();
 
         for external_source in &self.config.external_sources {
             info!("Fetching DNS records from {}", external_source.source_name);
@@ -103,28 +102,17 @@ impl DnsRecordCollector {
                 }
             }
 
-            self.dns_records_by_source
-                .insert(external_source.source_name.clone(), dns_records);
+            dns_records_by_source.insert(external_source.source_name.clone(), dns_records);
             info!(
                 "Fetched {} DNS records from {}",
-                self.dns_records_by_source[&external_source.source_name].len(),
+                dns_records_by_source[&external_source.source_name].len(),
                 external_source.source_name
             );
         }
+        // Return the dns_records_by_source HashMap
+        Ok(dns_records_by_source.clone())
         
         
-
-        // TODO: deduplicate the DNS records
-        Ok(())
-    }
-
-    /// Returns the collected DNS records by source
-    ///
-    /// # Returns
-    /// * `HashMap<String, Vec<DnsRecord>>` - A HashMap containing the DNS records by source
-    ///
-    pub fn get_dns_records_by_source(&self) -> &HashMap<String, Vec<DnsRecord>> {
-        &self.dns_records_by_source
     }
 
     // TODO: implement the merge_dns_records function where we store the canonical DNS records
@@ -166,14 +154,14 @@ mod tests {
             destination_file_path: "destination.home.lab".to_string(),
             source_file_paths: vec!["source1.home.lab".to_string()],
             ttl: 0,
-            call_frequency: 0,
+            call_frequency_in_minutes: 0,
             ca_cert_base64: "test".to_string(),
             log_level: "info".to_string(),
         };
         let mut collector = DnsRecordCollector::new(config, Box::new(MockDnsRecordFetcher));
 
-        collector.collect_dns_records().await.unwrap();
-        let records: Vec<DnsRecord> = collector.dns_records_by_source.get("test").unwrap().to_vec();
+        let records_map = collector.collect_dns_records().await.unwrap();
+        let records: Vec<DnsRecord> = records_map.get("test").unwrap().to_vec();
         assert!(!records[0].is_duplicate);
         assert!(records[1].is_duplicate);
         assert!(!records[2].is_duplicate);

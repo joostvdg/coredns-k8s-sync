@@ -8,7 +8,7 @@ pub struct Config {
     pub source_file_paths: Vec<String>,
     pub temp_storage_path: String,
     pub ttl: u64,
-    pub call_frequency: u64,
+    pub call_frequency_in_minutes: u64,
     pub ca_cert_base64: String,
     pub log_level: String,
 }
@@ -20,8 +20,8 @@ impl Default for Config {
             destination_file_path: "".to_string(),
             temp_storage_path: "".to_string(),
             source_file_paths: vec![],
-            ttl: 0,
-            call_frequency: 0,
+            ttl: 3600,
+            call_frequency_in_minutes: 1,
             ca_cert_base64: "".to_string(),
             log_level: "".to_string(),
         }
@@ -45,7 +45,7 @@ impl fmt::Display for Config {
         write!(
             f,
             "External Sources: {:?}\nDestination File Path: {}\nSource File Paths: {:?}\nTTL: {}\nCall Frequency: {}\nCA Cert Base64: {}\nLog Level: {}\n",
-            self.external_sources, self.destination_file_path, self.source_file_paths, self.ttl, self.call_frequency, self.ca_cert_base64, self.log_level
+            self.external_sources, self.destination_file_path, self.source_file_paths, self.ttl, self.call_frequency_in_minutes, self.ca_cert_base64, self.log_level
         )
     }
 }
@@ -78,7 +78,7 @@ mod tests {
             "temp_storage_path": "/tmp/coredns/",
             "source_file_paths": ["/path/to/source1"],
             "ttl": 3600,
-            "call_frequency": 60,
+            "call_frequency_in_minutes": 2,
             "ca_cert_base64": "base64-encoded-ca-cert",
             "log_level": "info"
         });
@@ -92,7 +92,7 @@ mod tests {
         assert_eq!(config.temp_storage_path, "/tmp/coredns/");
         assert_eq!(config.source_file_paths[0], "/path/to/source1");
         assert_eq!(config.ttl, 3600);
-        assert_eq!(config.call_frequency, 60);
+        assert_eq!(config.call_frequency_in_minutes, 2);
         assert_eq!(config.ca_cert_base64, "base64-encoded-ca-cert");
         assert_eq!(config.log_level, "info");
     }
