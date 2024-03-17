@@ -5,7 +5,7 @@ use tokio::fs::OpenOptions;
 use tokio::io::AsyncReadExt;
 use ErrorKind::NotFound;
 
-use crate::dns_record:: DnsRecord;
+use crate::dns_record::DnsRecord;
 use log::{info, warn};
 
 /// Merge the contents of the Source file with our own content
@@ -92,11 +92,10 @@ async fn read_content_from_source_file(source_file_path: &str) -> io::Result<Str
 /// * `io::Result<()>` - A result indicating success or failure
 ///
 pub async fn write_dns_records_to_file(
-    dns_records: & mut [DnsRecord],
+    dns_records: &mut [DnsRecord],
     destination_file_path: &str,
     source_name: &str,
 ) -> io::Result<usize> {
-    
     let mut destination_file_content = String::new();
     destination_file_content.push_str("; Source: ");
     destination_file_content.push_str(source_name);
@@ -125,17 +124,16 @@ pub async fn write_dns_records_to_file(
         }
         records_written += 1;
     }
-    
+
     // Add a newline at the end of the file
     destination_file_content.push('\n');
-    
+
     let file_write_result = tokio::fs::write(destination_file_path, destination_file_content).await;
     match file_write_result {
         Ok(_) => {
             info!(
                 "Wrote {} DNS records to file: {}",
-                records_written,
-                destination_file_path
+                records_written, destination_file_path
             );
             Ok(records_written)
         }
@@ -149,9 +147,9 @@ pub async fn write_dns_records_to_file(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs::read_to_string;
     use tokio::fs::File;
     use tokio::io::AsyncReadExt;
-    use std::fs::read_to_string;
 
     const DOMAIN_NAME: &str = "example.com";
     const PADDING: usize = 5;
@@ -220,8 +218,6 @@ mod tests {
     }
 
     async fn generate_test_dns_records() -> Vec<DnsRecord> {
-        
-
         let mut dns_record_a = DnsRecord {
             fqdn: "a.example.com".to_string(),
             ip: "127.0.0.2".to_string(),
@@ -229,7 +225,7 @@ mod tests {
         };
         dns_record_a.set_a_record(DOMAIN_NAME, PADDING);
 
-        let mut  dns_record_b = DnsRecord {
+        let mut dns_record_b = DnsRecord {
             fqdn: "b.example.com".to_string(),
             ip: "127.0.0.1".to_string(),
             ..Default::default()
@@ -264,7 +260,14 @@ mod tests {
         dns_record_e_dup.set_a_record(DOMAIN_NAME, PADDING);
         dns_record_e_dup.is_duplicate = true;
 
-        vec![dns_record_b, dns_record_d, dns_record_a, dns_record_c, dns_record_e, dns_record_e_dup]
+        vec![
+            dns_record_b,
+            dns_record_d,
+            dns_record_a,
+            dns_record_c,
+            dns_record_e,
+            dns_record_e_dup,
+        ]
     }
 
     #[tokio::test]
@@ -273,8 +276,12 @@ mod tests {
         let destination_file_path = "testdata/test_write_dns_records_to_file_success";
         let source_name = "test_source";
 
-        let result =
-            write_dns_records_to_file(dns_records.as_mut_slice(), destination_file_path, source_name).await;
+        let result = write_dns_records_to_file(
+            dns_records.as_mut_slice(),
+            destination_file_path,
+            source_name,
+        )
+        .await;
         assert!(
             result.is_ok(),
             "Failed to write DNS records to file: {:?}",
@@ -291,8 +298,12 @@ mod tests {
         let destination_file_path = "/root/test_write_dns_records_to_file_invalid_path";
         let source_name = "test_source";
 
-        let result =
-            write_dns_records_to_file(dns_records.as_mut_slice(), destination_file_path, source_name).await;
+        let result = write_dns_records_to_file(
+            dns_records.as_mut_slice(),
+            destination_file_path,
+            source_name,
+        )
+        .await;
         assert!(
             result.is_err(),
             "Expected an error due to invalid file path"
@@ -306,22 +317,25 @@ mod tests {
         let destination_file_path = "testdata/test_write_dns_records_to_file_order";
         let source_name = "test_source";
 
-        let result =
-            write_dns_records_to_file(dns_records.as_mut_slice(), destination_file_path, source_name).await;
+        let result = write_dns_records_to_file(
+            dns_records.as_mut_slice(),
+            destination_file_path,
+            source_name,
+        )
+        .await;
         assert!(
             result.is_ok(),
             "Failed to write DNS records to file: {:?}",
             result.err()
         );
 
-        let lines: Vec<_> = read_to_string(destination_file_path) 
-            .unwrap()  // panic on possible file-reading errors
-            .lines()  // split the string into an iterator of string slices
-            .map(String::from)  // make each slice into a string
-            .collect();  // gather them together into a vector
+        let lines: Vec<_> = read_to_string(destination_file_path)
+            .unwrap() // panic on possible file-reading errors
+            .lines() // split the string into an iterator of string slices
+            .map(String::from) // make each slice into a string
+            .collect(); // gather them together into a vector
 
         println!("Destination file content: \n{:?}", lines);
-        
 
         let expected_line_1 = "a     IN A 127.0.0.2";
         let expected_line_2 = "b     IN A 127.0.0.1";
@@ -334,7 +348,6 @@ mod tests {
         assert_eq!(lines[3], expected_line_3);
         assert_eq!(lines[4], expected_line_4);
         assert_eq!(lines[5], expected_line_5);
-        
     }
 
     #[tokio::test]
@@ -343,29 +356,31 @@ mod tests {
         let destination_file_path = "testdata/test_write_dns_records_to_file_order";
         let source_name = "test_source";
 
-        let result =
-            write_dns_records_to_file(dns_records.as_mut_slice(), destination_file_path, source_name).await;
+        let result = write_dns_records_to_file(
+            dns_records.as_mut_slice(),
+            destination_file_path,
+            source_name,
+        )
+        .await;
         assert!(
             result.is_ok(),
             "Failed to write DNS records to file: {:?}",
             result.err()
         );
 
-        let lines: Vec<_> = read_to_string(destination_file_path) 
-            .unwrap()  // panic on possible file-reading errors
-            .lines()  // split the string into an iterator of string slices
-            .map(String::from)  // make each slice into a string
-            .collect();  // gather them together into a vector
+        let lines: Vec<_> = read_to_string(destination_file_path)
+            .unwrap() // panic on possible file-reading errors
+            .lines() // split the string into an iterator of string slices
+            .map(String::from) // make each slice into a string
+            .collect(); // gather them together into a vector
 
         println!("Destination file content: \n{:?}", lines);
-        
 
         let expected_line_5 = "e     IN A 127.0.0.4";
         let expected_line_6 = "; e     IN A 127.0.0.4 - Duplicate";
 
         assert_eq!(lines[5], expected_line_5);
         assert_eq!(lines[6], expected_line_6);
-        
     }
 
     #[tokio::test]
@@ -374,8 +389,12 @@ mod tests {
         let destination_file_path = "testdata/test_write_dns_records_to_file_empty_records";
         let source_name = "test_source";
 
-        let result =
-            write_dns_records_to_file(dns_records.as_mut_slice(), destination_file_path, source_name).await;
+        let result = write_dns_records_to_file(
+            dns_records.as_mut_slice(),
+            destination_file_path,
+            source_name,
+        )
+        .await;
         assert!(
             result.is_ok(),
             "Failed to write DNS records to file: {:?}",

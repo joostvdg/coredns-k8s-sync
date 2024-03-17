@@ -13,6 +13,13 @@ Synchronize CoreDNS config file with DNS entries from Kubernetes resources
 * [X] Set source files in the config file
 * [X] Pad/format the written A Records
 * [X] Set destination file in the config file
+* [ ] Run as SystemD service
+    * [ ] Install as a SystemD service
+    * [ ] Configure the service to start on boot
+    * [ ] Configure the service to restart on failure
+    * [ ] Configure the service to restart on exit
+    * [ ] Configure the service to restart on file change
+    * [ ] Configure the service to restart on signal
 * [ ] Restart CoreDNS when the destination file changes
 * [ ] Gracefull shutdown, when the program is terminated
     * [ ] Wait for the CoreDNS restart to complete
@@ -100,3 +107,26 @@ export RUST_LOG=INFO
 ```shell
 cargo run
 ```
+
+## Run As SystemD Service
+
+```shell
+sudo systemctl daemon-reload
+```
+
+```shell
+sudo systemctl enable coredns-k8s-sync
+```
+
+```shell
+sudo systemctl start coredns-k8s-sync
+```
+
+```shell
+sudo systemctl status coredns-k8s-sync
+```
+
+```shell
+sudo journalctl -u coredns-k8s-sync
+```
+

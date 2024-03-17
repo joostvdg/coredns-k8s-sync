@@ -1,26 +1,32 @@
 use crate::config::{Config, ExternalSource};
 use crate::dns_record::DnsRecord;
+use async_trait::async_trait;
 use base64::{engine::general_purpose, Engine as _};
 use log::{info, warn};
 use reqwest::{Certificate, Url};
 use std::collections::HashMap;
 use std::fmt;
 use std::time::Duration;
-use async_trait::async_trait;
 
 #[async_trait]
 pub trait DnsRecordFetcher {
-    async fn fetch_dns_records(&self, source: &ExternalSource, ca_cert_base64: &str) -> Result<Vec<DnsRecord>, Box<dyn std::error::Error>>;
+    async fn fetch_dns_records(
+        &self,
+        source: &ExternalSource,
+        ca_cert_base64: &str,
+    ) -> Result<Vec<DnsRecord>, Box<dyn std::error::Error>>;
 }
 
 pub struct RealDnsRecordFetcher;
 
 #[async_trait]
 impl DnsRecordFetcher for RealDnsRecordFetcher {
-    async fn fetch_dns_records(&self, source: &ExternalSource, ca_cert_base64: &str) -> Result<Vec<DnsRecord>, Box<dyn std::error::Error>> {
-        let cert_as_decoded_bytes = general_purpose::STANDARD
-            .decode(ca_cert_base64)
-            .unwrap();
+    async fn fetch_dns_records(
+        &self,
+        source: &ExternalSource,
+        ca_cert_base64: &str,
+    ) -> Result<Vec<DnsRecord>, Box<dyn std::error::Error>> {
+        let cert_as_decoded_bytes = general_purpose::STANDARD.decode(ca_cert_base64).unwrap();
 
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(10))
@@ -35,7 +41,6 @@ impl DnsRecordFetcher for RealDnsRecordFetcher {
             .await?;
 
         Ok(result)
-    
     }
 }
 
@@ -46,32 +51,33 @@ pub struct DnsRecordCollector {
 
 impl fmt::Display for DnsRecordCollector {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "Config: {}\n",
-            self.config,
-        )
+        writeln!(f, "Config: {}\n", self.config,)
     }
 }
 
 // TODO: make fetcher optional, so we use the real fetcher by default
 impl DnsRecordCollector {
-    pub fn new(config: Config, fetcher:  Box<dyn DnsRecordFetcher>   ) -> DnsRecordCollector {
+    pub fn new(config: Config, fetcher: Box<dyn DnsRecordFetcher>) -> DnsRecordCollector {
         DnsRecordCollector {
             config,
-            fetcher: fetcher,
+            fetcher,
         }
     }
 
     // For each external_source in the config, fetch the DNS records and store them in the dns_records_by_source HashMap
-    pub async fn collect_dns_records(&mut self) -> Result<HashMap<String, Vec<DnsRecord>>, Box<dyn std::error::Error>> {
+    pub async fn collect_dns_records(
+        &mut self,
+    ) -> Result<HashMap<String, Vec<DnsRecord>>, Box<dyn std::error::Error>> {
         let mut fqds_seen = HashMap::new();
         let mut dns_records_by_source: HashMap<String, Vec<DnsRecord>> = HashMap::new();
 
         for external_source in &self.config.external_sources {
             info!("Fetching DNS records from {}", external_source.source_name);
-            
-            let fetch_result = self.fetcher.fetch_dns_records(external_source, self.config.ca_cert_base64.as_str()).await;
+
+            let fetch_result = self
+                .fetcher
+                .fetch_dns_records(external_source, self.config.ca_cert_base64.as_str())
+                .await;
             if fetch_result.is_err() {
                 warn!(
                     "Failed to fetch DNS records from {} - {}",
@@ -82,7 +88,7 @@ impl DnsRecordCollector {
             }
 
             let mut dns_records = fetch_result.unwrap();
-            dns_records.sort_by_key( |record| record.fqdn.clone());
+            dns_records.sort_by_key(|record| record.fqdn.clone());
             let mut longest_name = 0;
 
             for record in &mut dns_records {
@@ -111,16 +117,12 @@ impl DnsRecordCollector {
         }
         // Return the dns_records_by_source HashMap
         Ok(dns_records_by_source.clone())
-        
-        
     }
 
     // TODO: implement the merge_dns_records function where we store the canonical DNS records
     // TODO: sort the results by FQDN
     // TODO: strip the domain name from the FQDN
 }
-
-
 
 #[cfg(test)]
 mod tests {
@@ -131,13 +133,26 @@ mod tests {
 
     #[async_trait]
     impl DnsRecordFetcher for MockDnsRecordFetcher {
-        async fn fetch_dns_records(&self, _source: &ExternalSource, _ca_cert_base64: &str) -> Result<Vec<DnsRecord>, Box<dyn std::error::Error>> {
+        async fn fetch_dns_records(
+            &self,
+            _source: &ExternalSource,
+            _ca_cert_base64: &str,
+        ) -> Result<Vec<DnsRecord>, Box<dyn std::error::Error>> {
             let records = vec![
-                    DnsRecord { fqdn: "test1.example.com".to_string(), ..Default::default() },
-                    DnsRecord { fqdn: "test1.example.com".to_string(), ..Default::default() },
-                    DnsRecord { fqdn: "test2.example.com".to_string(), ..Default::default() },
-                ];
-            
+                DnsRecord {
+                    fqdn: "test1.example.com".to_string(),
+                    ..Default::default()
+                },
+                DnsRecord {
+                    fqdn: "test1.example.com".to_string(),
+                    ..Default::default()
+                },
+                DnsRecord {
+                    fqdn: "test2.example.com".to_string(),
+                    ..Default::default()
+                },
+            ];
+
             Ok(records)
         }
     }

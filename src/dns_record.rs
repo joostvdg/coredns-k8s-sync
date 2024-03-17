@@ -47,13 +47,12 @@ impl fmt::Display for DnsRecord {
     }
 }
 
-
 impl DnsRecord {
     pub fn set_a_record(&mut self, domain_name: &str, padding_length: usize) {
         let domain_to_strip = format!(".{}", domain_name);
         let mut a_record_name = self.fqdn.replace(domain_to_strip.as_str(), "");
         for _ in 0..(padding_length - a_record_name.len()) {
-            a_record_name.push_str(" ");
+            a_record_name.push(' ');
         }
         self.a_record = format!("{} IN A {}", a_record_name, self.ip);
     }
@@ -75,15 +74,15 @@ mod tests {
             ip: "192.168.178.101".to_string(),
             ..Default::default()
         };
-        record_a.set_a_record( "example.com", padding_length);
-        
+        record_a.set_a_record("example.com", padding_length);
+
         let mut record_b = DnsRecord {
             fqdn: "test2.example.com".to_string(),
             a_record: "".to_string(),
             ip: "192.168.178.102".to_string(),
             ..Default::default()
         };
-        record_b.set_a_record( "example.com", padding_length);
+        record_b.set_a_record("example.com", padding_length);
 
         assert_eq!(record_a.a_record, "test1      IN A 192.168.178.101");
         assert_eq!(record_b.a_record, "test2      IN A 192.168.178.102");

@@ -16,6 +16,9 @@ clean:
 static:
 	cargo rustc --release -- -C target-feature=+crt-static
 
+static-musl:
+	cargo build --release --target x86_64-unknown-linux-musl
+
 .PHONY: audit
 
 audit:
