@@ -4,20 +4,9 @@ Synchronize CoreDNS config file with DNS entries from Kubernetes resources
 
 ## TODO
 
-* [X] Read in a source file containing DNS records from Kubernetes resources
-    * [X] Collect this source file from IDEC endpoints
-      * [X] Configure these endpoints with a configuration file
-    * [X] Detect duplications and remove them (and log them)
-    * [X] Sort the records in each section, so that output is consistent
-    * [X] Merge the records into a single file with source files
-* [X] Set source files in the config file
-* [X] Pad/format the written A Records
-* [X] Set destination file in the config file
+* [ ] Reload CoreDNS withouth using `systemctl` or `sudo`
+    * https://coredns.io/plugins/reload/
 * [X] Run as SystemD service
-    * [X] Install as a SystemD service
-    * [X] Configure the service to start on boot
-    * [X] Configure the service to restart on failure
-    * [X] Configure the service to restart on exit
     * [ ] Configure the service to restart on file change
     * [ ] Configure the service to restart on signal
 * [ ] Restart CoreDNS when the destination file changes
