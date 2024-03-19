@@ -35,8 +35,8 @@ pub struct ExternalSource {
     pub source_name: String,
 }
 
-pub fn load_config() -> std::result::Result<Config, Box<dyn Error>> {
-    let config: Config = serde_json::from_str(&fs::read_to_string("config.json")?)?;
+pub fn load_config(config_file_path: String) -> std::result::Result<Config, Box<dyn Error>> {
+    let config: Config = serde_json::from_str(&fs::read_to_string(config_file_path)?)?;
     Ok(config)
 }
 

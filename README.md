@@ -13,11 +13,11 @@ Synchronize CoreDNS config file with DNS entries from Kubernetes resources
 * [X] Set source files in the config file
 * [X] Pad/format the written A Records
 * [X] Set destination file in the config file
-* [ ] Run as SystemD service
-    * [ ] Install as a SystemD service
-    * [ ] Configure the service to start on boot
-    * [ ] Configure the service to restart on failure
-    * [ ] Configure the service to restart on exit
+* [X] Run as SystemD service
+    * [X] Install as a SystemD service
+    * [X] Configure the service to start on boot
+    * [X] Configure the service to restart on failure
+    * [X] Configure the service to restart on exit
     * [ ] Configure the service to restart on file change
     * [ ] Configure the service to restart on signal
 * [ ] Restart CoreDNS when the destination file changes
@@ -27,6 +27,10 @@ Synchronize CoreDNS config file with DNS entries from Kubernetes resources
     * Inspiration from [Tokio Graceful Shutdown](https://tokio.rs/tokio/tutorial/graceful_shutdown) docs
 * [ ] Have proper retry logic for the DNS Collector
 * [ ] Integration test, using several test source files and then verifying the output
+* [ ] Support authentication for IDEC endpoints
+* [ ] CI/CD workflow
+* [ ] Publish as Ubuntu package
+* [ ] Publush via Homebrew
 
 ## Rust Tools Required
 
@@ -110,6 +114,16 @@ cargo run
 
 ## Run As SystemD Service
 
+```sh
+sudo cp coredns-k8s-sync.service /etc/systemd/system/
+```
+
+```shell
+sudo cat /etc/systemd/system/coredns-k8s-sync.service
+```
+
+
+
 ```shell
 sudo systemctl daemon-reload
 ```
@@ -123,10 +137,33 @@ sudo systemctl start coredns-k8s-sync
 ```
 
 ```shell
+sudo systemctl stop coredns-k8s-sync
+```
+
+```shell
 sudo systemctl status coredns-k8s-sync
 ```
 
 ```shell
-sudo journalctl -u coredns-k8s-sync
+sudo journalctl -u coredns-k8s-sync -n50
 ```
 
+## Permisions To Restart CoreDNS Service
+
+```shell
+sudo vim /etc/sudoers.d/coredns
+```
+
+```shell
+%coredns ALL= NOPASSWD: /bin/systemctl start coredns-k8s-sync
+%coredns ALL= NOPASSWD: /bin/systemctl stop coredns-k8s-sync
+%coredns ALL= NOPASSWD: /bin/systemctl restart coredns-k8s-sync
+```
+
+```shell
+sudo visudo -c
+```
+
+```shell
+coredns ALL=(ALL) NOPASSWD: ALL
+```

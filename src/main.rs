@@ -14,11 +14,25 @@ use crate::dns_record_collector::RealDnsRecordFetcher;
 
 use log::{error, info};
 
+extern crate getopts;
+use getopts::Options;
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     env_logger::init();
+    let mut opts = Options::new();
+    opts.optopt("c", "config", "Set the config file path", "FILE");
+    let matches = opts.parse(std::env::args().skip(1))?;
 
-    let config = config::load_config()?;
+    let config_path = match matches.opt_str("c") {
+        Some(path) => path,
+        None => {
+            eprintln!("Please provide a config file path with -c or --config");
+            std::process::exit(1);
+        }
+    };
+
+    let config = config::load_config(config_path)?;
     info!("Config:\n{}", config.to_string());
 
     let period_time_in_minutes = Duration::from_secs(config.call_frequency_in_minutes * 60);

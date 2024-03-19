@@ -3,7 +3,8 @@ use tokio::process::Command;
 
 pub async fn restart_coredns() -> Result<(), Box<dyn std::error::Error>> {
     // Restart coredns service using systemctl command
-    let output = Command::new("systemctl")
+    let output = Command::new("sudo")
+        .arg("systemctl")
         .arg("restart")
         .arg("coredns")
         .output()

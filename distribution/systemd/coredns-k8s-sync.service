@@ -1,0 +1,16 @@
+[Unit]
+Description=Core DNS Kubernetes Sync
+After=network.target
+
+[Service]
+User=coredns
+Group=coredns
+WorkingDirectory=/etc/coredns-k8s-sync/temp/
+ExecStart=/usr/bin/coredns-k8s-sync --config=/etc/coredns-k8s-sync/config.json
+ExecReload=/bin/kill -SIGUSR1 $MAINPID
+Restart=on-failure
+Environment="RUST_LOG=INFO"
+
+[Install]
+WantedBy=multi-user.target
+
