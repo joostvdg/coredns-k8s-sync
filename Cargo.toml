@@ -1,12 +1,12 @@
 [package]
 name = "coredns-k8s-sync"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-reqwest = { version = "0.11.25", features = ["blocking", "serde_json", "json"]}
+reqwest = { version = "0.11", features = ["blocking", "serde_json", "json"]}
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 tokio = { version = "1", features = ["full", "tracing"] }

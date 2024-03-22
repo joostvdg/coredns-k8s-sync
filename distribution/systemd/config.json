@@ -2,7 +2,8 @@
   "source_file_paths": [
     "/etc/coredns-k8s-sync/source.home.lab",
     "/etc/coredns-k8s-sync/source.mandarin.compose",
-    "/etc/coredns-k8s-sync/source.grape.compose"
+    "/etc/coredns-k8s-sync/source.grape.compose",
+    "/etc/coredns-k8s-sync/source.mandarin.kubernetes"
   ],
   "destination_file_path": "/var/lib/coredns/db.home.lab",
   "temp_storage_path": "/etc/coredns-k8s-sync/temp/",
@@ -15,6 +16,11 @@
       "url": "https://idec-grape.home.lab/export",
       "domain_name": "home.lab",
       "source_name": "grape"
+    },
+    {
+      "url": " https://idec-mandarin-blue.home.lab/export",
+      "domain_name": "home.lab",
+      "source_name": "mandarin-blue"
     }
   ]
 }

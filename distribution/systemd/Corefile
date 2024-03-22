@@ -1,0 +1,13 @@
+home.lab:53 {
+  file db.home.lab {
+    reload 90s
+  }
+  log
+}
+
+.:53 {
+  forward . 192.168.178.1
+  log
+  errors
+  cache
+}

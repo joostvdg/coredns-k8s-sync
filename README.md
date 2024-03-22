@@ -4,12 +4,15 @@ Synchronize CoreDNS config file with DNS entries from Kubernetes resources
 
 ## TODO
 
-* [ ] Reload CoreDNS withouth using `systemctl` or `sudo`
+* [X] Reload CoreDNS withouth using `systemctl` or `sudo`
     * https://coredns.io/plugins/reload/
-* [X] Run as SystemD service
-    * [ ] Configure the service to restart on file change
-    * [ ] Configure the service to restart on signal
-* [ ] Restart CoreDNS when the destination file changes
+    * We can use the `file` plugin to watch for changes in the file
+* [X] Remove the CoreDNS sync logic and use the `file` plugin
+    * https://coredns.io/plugins/file/
+    * We can use the `file` plugin to watch for changes in the file
+    * cleanup permissions for user
+* [ ] Detect changes in Config file, and reload
+  * [ ] Detect changes in source files
 * [ ] Gracefull shutdown, when the program is terminated
     * [ ] Wait for the CoreDNS restart to complete
     * [ ] Ensure we stop or wait for the DNS Collector to finish before closing

@@ -58,10 +58,7 @@ impl fmt::Display for DnsRecordCollector {
 // TODO: make fetcher optional, so we use the real fetcher by default
 impl DnsRecordCollector {
     pub fn new(config: Config, fetcher: Box<dyn DnsRecordFetcher>) -> DnsRecordCollector {
-        DnsRecordCollector {
-            config,
-            fetcher,
-        }
+        DnsRecordCollector { config, fetcher }
     }
 
     // For each external_source in the config, fetch the DNS records and store them in the dns_records_by_source HashMap

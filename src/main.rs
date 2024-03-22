@@ -1,6 +1,5 @@
 // main.rs
 mod config;
-mod coredns_handler;
 mod dns_record;
 mod dns_record_collector;
 mod file_writer;
@@ -84,7 +83,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             }
         }
 
-        reload_coredns_service().await.unwrap();
         sleep(period_time_in_minutes).await;
     }
 }
@@ -107,18 +105,4 @@ pub async fn write_records(
         source_file_paths.push(local_test_records_file_path.clone());
     }
     Ok(source_file_paths)
-}
-
-pub async fn reload_coredns_service() -> Result<(), Box<dyn std::error::Error>> {
-    info!("Reloading CoreDNS service...");
-    let coredns_restart_result = coredns_handler::restart_coredns().await;
-    match coredns_restart_result {
-        Ok(_) => {
-            info!("Successfully called CoreDNS service restart command")
-        }
-        Err(e) => {
-            error!("Failed to restart CoreDNS service: {}", e)
-        }
-    }
-    Ok(())
 }
