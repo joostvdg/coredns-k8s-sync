@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::{error::Error, fmt, fs};
+use log::{info};
 
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct Config {
@@ -96,4 +97,16 @@ mod tests {
         assert_eq!(config.ca_cert_base64, "base64-encoded-ca-cert");
         assert_eq!(config.log_level, "info");
     }
+}
+
+
+// handle listening on a channel for config updates
+pub async fn handle_config_update(mut receiver: tokio::sync::mpsc::Receiver<Result<notify::Event, notify::Error>>)  {
+    info!("Listening for config updates...");
+    while let Some(_) = receiver.recv().await {
+        // reload the config
+        let config = load_config("config.json".to_string()).unwrap();
+        info!("Config updated: {}", config);
+    }
+
 }

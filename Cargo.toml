@@ -16,3 +16,5 @@ base64 = "0.22.0"
 mockall = "0.12.1"
 async-trait = "0.1.77"
 getopts = "0.2.21"
+# By default crossbeam-channel is used internally by notify. Which also allows the Watcher to be sync. This can cause issues when used inside tokio.
+notify = {version = "6.1.1", default-features = false, features = ["macos_kqueue"]}

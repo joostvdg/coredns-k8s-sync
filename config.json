@@ -14,7 +14,7 @@
     {
       "url": "http://127.0.0.1:8080/export",
       "domain_name": "example.com",
-      "source_name": "kind"
+      "source_name": "kind3"
     },
     {
       "url": "https://idec-grape.home.lab/export",

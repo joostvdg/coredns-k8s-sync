@@ -3,11 +3,14 @@ mod config;
 mod dns_record;
 mod dns_record_collector;
 mod file_writer;
+mod file_watcher;
 
 use std::collections::HashMap;
 
 use dns_record::DnsRecord;
-use tokio::time::{sleep, Duration};
+use notify::{RecommendedWatcher, RecursiveMode, Watcher};
+use tokio::{sync::mpsc, time::{sleep, Duration}};
+
 
 use crate::dns_record_collector::RealDnsRecordFetcher;
 
@@ -31,10 +34,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     };
 
+
+
+    let config_path_clone = config_path.clone();
     let config = config::load_config(config_path)?;
     info!("Config:\n{}", config.to_string());
-
-    let period_time_in_minutes = Duration::from_secs(config.call_frequency_in_minutes * 60);
 
     let mut source_file_paths: Vec<String> = Vec::new();
     for source_path in config.source_file_paths.iter() {
@@ -45,8 +49,41 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         source_file_paths.push(source_path.clone());
     }
 
-    // Run the infinite loop in a separate task
-    // let loop_task = tokio::spawn(async move {
+
+    // TODO: finish this
+    // https://github.com/notify-rs/notify/issues/380
+    // https://github.com/notify-rs/notify/blob/main/examples/async_monitor.rs
+    // https://tokio.rs/tokio/tutorial/channels
+    // Also needs to make the actual file writing loop async
+    let (tx, mut rx) = mpsc::channel(100);
+    let mut watcher = RecommendedWatcher::new(move |result: std::result::Result<notify::Event, notify::Error>| {
+            tx.blocking_send(result).expect("Failed to send event");
+        },
+        notify::Config::default()
+    )?;
+
+    let mut paths = source_file_paths.clone();
+    paths.push(config_path_clone);
+    for path_string in paths {
+        let path = std::path::PathBuf::from(path_string);
+        watcher.watch(&path, RecursiveMode::NonRecursive).unwrap();
+    }
+
+    // This is a simple loop, but you may want to use more complex logic here,
+    // for example to handle I/O.
+    while let Some(res) = rx.recv().await {
+        tokio::spawn(async move {println!("got = {:?}", res);});
+    }
+    
+
+    // handle config updates
+    info!("Setup file watcher...");
+    config::handle_config_update(rx).await;
+    
+
+
+    let period_time_in_minutes = Duration::from_secs(config.call_frequency_in_minutes * 60);
+    // TODO:  Run the infinite loop in a separate task
     loop {
         info!("Restarting CoreDNS update loop...");
         let mut collector = dns_record_collector::DnsRecordCollector::new(
